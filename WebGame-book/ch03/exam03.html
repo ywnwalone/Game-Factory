@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <title>3. 캔버스 이미지 그리기</title>
+</head>
+
+<body>
+    <canvas id="webgame" width=500 height=500></canvas>
+    <script>
+        const canvas = document.getElementById("webgame"),
+            context = canvas.getContext("2d");
+
+        const img = new Image();
+        img.onload = () => {
+            //이미지 로딩이 완료된 후 캔버스에 그린다.
+            context.drawImage(img, 20, 20, 100, 100, 20, 20, 80, 80);
+        }
+        img.src = "http://images.all-free-download.com/images/graphicthumb/cup_of_coffee_188317.jpg";
+    </script>
+</body>
+
+</html>

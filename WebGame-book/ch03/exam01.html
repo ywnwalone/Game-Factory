@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <title>3. 캔버스 도형 그리기</title>
+</head>
+
+<body>
+    <canvas id="webgame" width=500 height=500></canvas>
+    <script>
+        const canvas = document.getElementById("webgame"),
+            context = canvas.getContext("2d");
+
+
+        context.fillStyle = "red";
+        context.strokeStyle = "blue";
+        context.lineWidth = 5;
+        context.fillRect(10, 10, 100, 100);
+        context.strokeRect(10, 10, 100, 100);
+
+        /*path로 사각형 그리기*/
+        context.beginPath();
+        context.rect(10, 10, 100, 100);
+        context.fillStyle = "green";
+        context.strokeStyle = "blue";
+        context.lineWidth = 5;
+        context.fill();
+        context.stroke();
+
+        /*path로 삼각형 그리기*/
+        context.beginPath();
+        context.moveTo(50, 50);
+        context.lineTo(150, 50);
+        context.lineTo(100, 100);
+        context.lineTo(50, 50);
+        context.closePath();
+        context.fillStyle = "green";
+        context.fill();
+
+        /*path로 원형 그리기*/
+        context.beginPath();
+        context.arc(100, 100, 30, 0, Math.PI, true);
+        context.closePath();
+        context.stroke();
+
+        /*path로 복잡한 것 그리기*/
+        context.beginPath();
+        context.moveTo(20, 100);
+        context.lineTo(100, 100);
+        context.arc(150, 100, 50, -Math.PI, 0, false);
+        context.lineTo(250, 100);
+        context.lineTo(250, 200);
+        context.stroke();
+    </script>
+</body>
+
+</html>

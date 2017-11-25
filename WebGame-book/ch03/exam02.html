@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <title>3. 캔버스 글자 쓰기</title>
+</head>
+
+<body>
+    <canvas id="webgame" width=500 height=500></canvas>
+    <script>
+        const canvas = document.getElementById("webgame"),
+            context = canvas.getContext("2d");
+
+        // context.fillText("Hello, World", 50, 50);
+        // context.strokeText("Hello, World", 50, 100);
+
+        /*텍스트 스타일링 적용*/
+        context.font = "italic 600 20px/2 Helvetica";
+        context.fillStyle = "green";
+        context.fillText("Hello, World", 50, 100);
+
+        /*textAlign*/
+        context.font = "14px Helvetica";
+        context.fillStyle = "black";
+
+        context.textAlign = "start";
+        context.fillText("context.textAlign = start", 200, 30);
+
+        context.textAlign = "end";
+        context.fillText("context.textAlign = end", 200, 60);
+
+        context.textAlign = "left";
+        context.fillText("context.textAlign = left", 200, 90);
+
+        context.textAlign = "center";
+        context.fillText("context.textAlign = center", 200, 120);
+
+        context.textAlign = "right";
+        context.fillText("context.textAlign = right", 200, 150);
+
+        /*textBaseline*/
+        context.font = "20px Helvetica";
+        context.fillStyle = "black";
+
+        context.textBaseline = "top";
+        context.fillText("top", 100, 100);
+
+        context.textBaseline = "hanging";
+        context.fillText("hanging", 140, 100);
+
+        context.textBaseline = "middle";
+        context.fillText("middle", 220, 100);
+
+        context.textBaseline = "alphabetic";
+        context.fillText("alphabetic", 290, 100);
+
+        context.textBaseline = "ideographic";
+        context.fillText("ideographic", 390, 100);
+
+        context.textBaseline = "bottom";
+        context.fillText("bottom g", 510, 100);
+
+        /*measureText를 이용한 줄바꿈 */
+        const fillTextWithLineBreaks = (context, text, x, y, maxWidth) => {
+            const splittedText = text.split(' '),
+                //이 예제에서는 텍스트 사이즈를 line height로 사용한다.
+                lineHeight = parseInt(context.font.match(/\d+/)[0], 10);
+
+            let textInLine = splittedText[0],
+                lineNum = 0;
+
+            for (let i = 1; i < splittedText.length; i++) {
+                let textMeasure = context.measureText(textInLine + splittedText[i]);
+
+                if (textMeasure.width >= maxWidth) {
+                    context.fillText(textInLine, x, y + (lineNum * lineHeight));
+                    textInLine = splittedText[i];
+                    lineNum++;
+                } else {
+                    textInLine += ' ' + splittedText[i];
+                }
+            }
+            context.fillText(textInLine, x, y + (lineNum * lineHeight));
+        };
+
+        const text = "lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+        maxWidth = 200;
+
+        context.strokeRect(20, 20, 200, 200);
+        context.font = "20px/2 Helvetica";
+
+        context.textBaseline = "top";
+        fillTextWithLineBreaks(context, text, 20, 20, maxWidth);
+    </script>
+</body>
+
+</html>
