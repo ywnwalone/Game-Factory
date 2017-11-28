@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+        <title>Tetris</title>
+    </head>
+    <body>
+        <canvas id="tetris-board" width="360" height="640">Tetris</canvas>
+        <script src="./js/tetris.js"></script>
+        <script>
+            //Tetris 게임 객체 생성
+            var game = new Tetris({
+                canvas: document.getElementById('tetris-board')
+            });
+
+        </script>
+    </body>
+</html>
