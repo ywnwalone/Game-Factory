@@ -50,7 +50,7 @@ class Tetris {
         };
         this.tickSize = 500;
         this.prevTick = Date.now();
-
+        this.controlButtons = [];
         this.init();
     }
     init() {
@@ -72,6 +72,9 @@ class Tetris {
         //새 블록을 보드 최상단 중간지점에 생성
         this.makeNewBlock(0, this.cols / 2);
         this.addKeyControl();
+
+        this.resizeCanvas();
+        this.addControlButtons();
     }
     loop() {
         //console.log('We are in the loop()...');
@@ -116,6 +119,10 @@ class Tetris {
                     this.context.fillRect((this.block.position.col + col) * blockSize.w, (this.block.position.row + row) * blockSize.h, blockSize.w, blockSize.h);
                 }
             }
+        }
+
+        for(let button of this.controlButtons){
+            button.render();
         }
     }
 
@@ -258,6 +265,142 @@ class Tetris {
                 this.board.splice(0, 0, Array(this.cols).fill(0));
             }
         }
+    }
+
+    resizeCanvas(){
+        let ratio = this.cols / (this.rows+2),
+            windowWidth = window.innerWidth,
+            windowHeight = window.innerHeight,
+            windowRatio = windowWidth / windowHeight,
+            scaledWidth = 0,
+            scaledHeight = 0;
+        
+        if(ratio < windowRatio){
+            //  가로를 똑같이 1로 놓았을 때, 분모인 세로 길이가 window쪽이 더 짧다는 의미이므로,
+            //  windowHeight를 기준으로 가로의 길이를 계산해서 캔버스를 조정한다.
+            //  세로로 여백이 발생한다.
+            scaledHeight = windowHeight;
+            scaledWidth = windowHeight * ratio;
+        }else{
+            //  가로를 똑같이 1로 놓았을 때, 분자인 가로 길이가 window쪽이 더 짧다는 의미이므로,
+            //  windowwidth를 기준으로 가로의 길이를 계산해서 캔버스를 조정한다.
+            //  가로로 여백이 발생한다.
+            scaledWidth = windowWidth;
+            scaledHeight = windowWidth / ratio;
+        }
+        this.canvas.width = scaledWidth;
+        this.canvas.height = scaledHeight;
+
+        //  2. 블록 사이즈와 버튼 사이즈를 계산한다.
+        this.blockSize = {
+            w: this.canvas.width / this.cols,
+            h: this.canvas.height / (this.rows + 2)
+        };
+        this.buttonSize = {
+            w: this.blockSize.w * 2.5,
+            h: this.blockSize.h * 2
+        }
+    }
+    addControlButtons(){
+        let buttonSizes = this.buttonSize,
+            leftButton = new Button({
+                x: 0,
+                y: this.blockSize.h * 20,
+                width: buttonSizes.w,
+                height: buttonSizes.h,
+                text: 'L',
+                canvas: this.canvas
+            }),
+            downButton = new Button({
+                x: buttonSizes.w,
+                y: this.blockSize.h * 20,
+                width: buttonSizes.w,
+                height: buttonSizes.h,
+                text: 'D',
+                canvas: this.canvas
+            }),
+            rotateButton = new Button({
+                x: buttonSizes.w * 2,
+                y: this.blockSize.h * 20,
+                width: buttonSizes.w,
+                height: buttonSizes.h,
+                text: 'U',
+                canvas: this.canvas
+            }),
+            rightButton = new Button({
+                x: buttonSizes.w * 3,
+                y: this.blockSize.h * 20,
+                width: buttonSizes.w,
+                height: buttonSizes.h,
+                text: 'R',
+                canvas: this.canvas
+            });
+        
+        leftButton.onTouchend(()=>{
+            this.moveBlock(0, -1);
+        });
+        rightButton.onTouchend(()=>{
+            this.moveBlock(0, 1);
+        });
+        rotateButton.onTouchend(()=>{
+            this.rotateBlock();
+        });
+        downButton.onTouchend(()=>{
+            this.moveBlock(1,0);
+        });
+
+        this.controlButtons.push(leftButton);
+        this.controlButtons.push(rightButton);
+        this.controlButtons.push(rotateButton);
+        this.controlButtons.push(downButton);
+    }
+}
+
+class Button{
+    constructor(props){
+        this._callback = ()=>{};
+        this.x = props.x || 0;
+        this.y = props.y || 0;
+        this.width = props.width || 0;
+        this.height = props.height || 0;
+        this.text = props.text || '';
+        this.canvas = props.canvas;
+        this.context = this.canvas.getContext('2d');
+
+
+        this.init();
+    }
+    init(){
+        this.canvas.addEventListener('touchend', (e)=>{
+            const touchX = e.changedTouches[0].clientX,
+                  touchY = e.changedTouches[0].clientY;
+            
+            if(touchX > this.x && touchX < this.x + this.width && touchY > this.y && touchY < this.y + this.height){
+                this._callback();
+            }
+        });
+
+    }
+
+    render(context){
+        this.context.fillStyle = '#333';
+        this.context.fillRect(this.x, this.y, this.width, this.height);
+        this.context.fillStyle = '#fff';
+        this.context.font = 'italic 200 48px/2 Helvetica';
+        this.context.textBaseline = 'top';
+        this.context.fillText(this.text, this.x, this.y);
+
+        
+    }
+
+
+
+    onTouched(callback){
+        this._callback = callback;
+    }
+
+    off(){
+        this._callback = () => {};
     }
 
 }
