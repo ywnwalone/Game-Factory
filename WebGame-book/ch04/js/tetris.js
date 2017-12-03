@@ -1,3 +1,13 @@
+// 1. 사용할 이미지 URL을 배열로 저장
+const IMAGE_URL = [
+    './img/block.png',
+    './img/green.png',
+    './img/lightblue.png',
+    './img/blue.png',
+    './img/pink.png',
+    './img/purple.png',
+    './img/gray.png'
+];
 const SHAPE = {
     I: [
         [1, 1, 1, 1]
@@ -51,9 +61,44 @@ class Tetris {
         this.tickSize = 500;
         this.prevTick = Date.now();
         this.controlButtons = [];
+
+        // this.blockImage = new Image();
+        // this.blockImage.src = './img/block.png';
+        //this.blockImage.onload = () => this.init();
+
+        this.animations = [];
+        this.animationImageUrl = './img/animation.png';
+        this.loadImages(this.animationImageUrl);
+
+        this.blockImages = [];
+
         this.init();
     }
+    loadImages(images, callback) {
+        let loader = new ImageLoader(images);
+        loader.done(callback);
+        loader.load();
+    }
     init() {
+        // 2. 이미지들을 로딩하고, 기존의 initializing 로직을 콜백 안으로 이동시킨다.
+        this.loadImages(IMAGE_URL, () => {
+            // 3. 이미지마다 Image객체를 생성하고 src 속성을 지정
+            for (let url of IMAGE_URL) {
+                let image = new Image();
+                image.src = url;
+                this.blockImages.push(image);
+            }
+
+            this.makeNewBlock(0, this.cols / 2);
+            this.addKeyControl();
+
+            let rowsArray = Array(this.rows).fill();
+            this.board = rowsArray.map(() => Array(this.cols).fill(0));
+
+            this.requestId = requestAnimationFrame(this.loop.bind(this));
+        });
+    }
+    eeinit() {
         requestAnimationFrame(this.loop.bind(this));
         //2d 배열을 모두 0으로 초기화함
 
@@ -90,6 +135,10 @@ class Tetris {
             }
         }
         this.removeCompleteRow();
+
+        for (let animation of this.animations) {
+            animation.update();
+        }
         this.render();
         this.requestId = requestAnimationFrame(this.loop.bind(this));
     }
@@ -105,8 +154,12 @@ class Tetris {
         for (let [row, rowArray] of this.board.entries()) {
             for (let [col, cell] of rowArray.entries()) {
                 if (cell > 0) {
-                    this.context.fillStyle = "red";
-                    this.context.fillRect(col * blockSize.w, row * blockSize.h, blockSize.w, blockSize.h);
+                    //this.context.fillStyle = "red";
+                    //this.context.fillRect(col * blockSize.w, row * blockSize.h, blockSize.w, blockSize.h);
+
+
+                    let image = this.blockImages[cell - 1];
+                    this.context.drawImage(image, col * blockSize.w, row * blockSize.h, blockSize.w, blockSize.h);
                 }
             }
         }
@@ -115,26 +168,33 @@ class Tetris {
         for (let [row, rowArray] of this.block.shape.entries()) {
             for (let [col, cell] of rowArray.entries()) {
                 if (cell > 0) {
-                    this.context.fillStyle = "red";
-                    this.context.fillRect((this.block.position.col + col) * blockSize.w, (this.block.position.row + row) * blockSize.h, blockSize.w, blockSize.h);
+                    //this.context.fillStyle = "red";
+                    //this.context.fillRect((this.block.position.col + col) * blockSize.w, (this.block.position.row + row) * blockSize.h, blockSize.w, blockSize.h);
+                    let image = this.blockImages[this.block.color - 1];
+                    this.context.drawImage(image, (this.block.position.col + col) * blockSize.w, (this.block.position.row + row) * blockSize.h, blockSize.w, blockSize.h);
                 }
             }
         }
 
-        for(let button of this.controlButtons){
+        for (let button of this.controlButtons) {
             button.render();
+        }
+        for (let animation of this.animations) {
+            animation.render(this.context);
         }
     }
 
     makeNewBlock(row, col) {
         //1. 랜덤한 모양을 선택한다.
         let randomShape = randomProperty(SHAPE);
+        let randomColor = Math.floor(Math.random() * IMAGE_URL.length) + 1;
 
         this.block = {
             shape: randomShape,
             //2. 블록의 좌측 위 좌표를 지정
+            color: randomColor,
             position: {
-                row,
+                row: row,
                 col: Math.ceil(col - randomShape[0].length / 2)
             },
             rows: randomShape.length,
@@ -184,7 +244,7 @@ class Tetris {
         for (let row = 0; row < this.block.rows; row++) {
             for (let col = 0; col < this.block.cols; col++) {
                 if (this.block.shape[row][col] > 0) {
-                    this.board[this.block.position.row + row][this.block.position.col + col] = this.block.shape[row][col];
+                    this.board[this.block.position.row + row][this.block.position.col + col] = this.block.color;
                 }
             }
         }
@@ -255,33 +315,70 @@ class Tetris {
         }
     }
     removeCompleteRow() {
+        let removeRow = (rowIndex) => {
+                this.board.splice(rowIndex, 1);
+                this.board.splice(0, 0, Array(this.cols).fill(0));
+            },
+            rowIndex = -1,
+            blockSize = {
+                w: this.canvas.width / this.cols,
+                h: this.canvas.height / this.rows
+            };
+
         for (let row = 0; row < this.rows; row++) {
             // 1. Array.every 메소드를 활용해, 행의 모든 값이 1 이상인지 확인
             if (this.board[row].every(value => value > 0)) {
-                // 2. Array.splice를 사용해 완성된 행을 삭제
-                this.board.splice(row, 1);
 
-                // 3. 다시 한 번 Array.splice를 사용해 보드의 제일 위에 빈 행을 추가
-                this.board.splice(0, 0, Array(this.cols).fill(0));
+                //Animation 객체를 생성
+                for (let col = 0; col < this.cols; col++) {
+                    let animation = new Animation({
+                        x: col * blockSize.w,
+                        y: row * blockSize.h,
+                        width: blockSize.w,
+                        height: blockSize.h,
+                        frameWidth: 128,
+                        frameHeight: 128,
+                        frames: 10,
+                        image: this.animationImageUrl,
+                        interval: 30
+                    });
+                    // 4. Animation 객체를 저장하고, 재생
+                    this.animations.push(animation);
+                    animation.start();
+
+                    if (col === this.cols - 1) {
+                        animation.done(() => {
+                            removeRow(row);
+                            this.animations = [];
+                        });
+                    }
+                    this.board[row] = Array(this.cols).fill(0);
+                }
+
+                // // 2. Array.splice를 사용해 완성된 행을 삭제
+                // this.board.splice(row, 1);
+
+                // // 3. 다시 한 번 Array.splice를 사용해 보드의 제일 위에 빈 행을 추가
+                // this.board.splice(0, 0, Array(this.cols).fill(0));
             }
         }
     }
 
-    resizeCanvas(){
-        let ratio = this.cols / (this.rows+2),
+    resizeCanvas() {
+        let ratio = this.cols / (this.rows + 2),
             windowWidth = window.innerWidth,
             windowHeight = window.innerHeight,
             windowRatio = windowWidth / windowHeight,
             scaledWidth = 0,
             scaledHeight = 0;
-        
-        if(ratio < windowRatio){
+
+        if (ratio < windowRatio) {
             //  가로를 똑같이 1로 놓았을 때, 분모인 세로 길이가 window쪽이 더 짧다는 의미이므로,
             //  windowHeight를 기준으로 가로의 길이를 계산해서 캔버스를 조정한다.
             //  세로로 여백이 발생한다.
             scaledHeight = windowHeight;
             scaledWidth = windowHeight * ratio;
-        }else{
+        } else {
             //  가로를 똑같이 1로 놓았을 때, 분자인 가로 길이가 window쪽이 더 짧다는 의미이므로,
             //  windowwidth를 기준으로 가로의 길이를 계산해서 캔버스를 조정한다.
             //  가로로 여백이 발생한다.
@@ -301,7 +398,7 @@ class Tetris {
             h: this.blockSize.h * 2
         }
     }
-    addControlButtons(){
+    addControlButtons() {
         let buttonSizes = this.buttonSize,
             leftButton = new Button({
                 x: 0,
@@ -335,18 +432,18 @@ class Tetris {
                 text: 'R',
                 canvas: this.canvas
             });
-        
-        leftButton.onTouchend(()=>{
+
+        leftButton.onTouchend(() => {
             this.moveBlock(0, -1);
         });
-        rightButton.onTouchend(()=>{
+        rightButton.onTouchend(() => {
             this.moveBlock(0, 1);
         });
-        rotateButton.onTouchend(()=>{
+        rotateButton.onTouchend(() => {
             this.rotateBlock();
         });
-        downButton.onTouchend(()=>{
-            this.moveBlock(1,0);
+        downButton.onTouchend(() => {
+            this.moveBlock(1, 0);
         });
 
         this.controlButtons.push(leftButton);
@@ -356,9 +453,9 @@ class Tetris {
     }
 }
 
-class Button{
-    constructor(props){
-        this._callback = ()=>{};
+class Button {
+    constructor(props) {
+        this._callback = () => {};
         this.x = props.x || 0;
         this.y = props.y || 0;
         this.width = props.width || 0;
@@ -370,19 +467,19 @@ class Button{
 
         this.init();
     }
-    init(){
-        this.canvas.addEventListener('touchend', (e)=>{
+    init() {
+        this.canvas.addEventListener('touchend', (e) => {
             const touchX = e.changedTouches[0].clientX,
-                  touchY = e.changedTouches[0].clientY;
-            
-            if(touchX > this.x && touchX < this.x + this.width && touchY > this.y && touchY < this.y + this.height){
+                touchY = e.changedTouches[0].clientY;
+
+            if (touchX > this.x && touchX < this.x + this.width && touchY > this.y && touchY < this.y + this.height) {
                 this._callback();
             }
         });
 
     }
 
-    render(context){
+    render(context) {
         this.context.fillStyle = '#333';
         this.context.fillRect(this.x, this.y, this.width, this.height);
         this.context.fillStyle = '#fff';
@@ -390,16 +487,16 @@ class Button{
         this.context.textBaseline = 'top';
         this.context.fillText(this.text, this.x, this.y);
 
-        
+
     }
 
 
 
-    onTouched(callback){
+    onTouchend(callback) {
         this._callback = callback;
     }
 
-    off(){
+    off() {
         this._callback = () => {};
     }
 
